@@ -2,7 +2,11 @@
   <div
     id="app"
     :class="
-      typeof weather.main != 'undefined' && weather.main.temp > 20 ? 'warm' : ''
+      typeof weather.main != 'undefined' &&
+      weather.main.temp > 22 &&
+      weather.weather[0].main !== 'Rain'
+        ? 'warm'
+        : ''
     "
   >
     <main>
@@ -11,7 +15,6 @@
           type="text"
           class="search-bar"
           v-model="query"
-          @keypress="fetchWeather"
           placeholder="Pesquise..."
         />
       </div>
@@ -47,17 +50,23 @@ export default {
     this.standardCity();
   },
 
-  methods: {
-    fetchWeather(e) {
-      if (e.key == "Enter") {
-        fetch(
-          `${this.url_base}weather?q=${this.query}&units=metric&APPID=${this.api_key}`
-        )
-          .then((res) => {
-            return res.json();
-          })
-          .then(this.setResults);
+  watch: {
+    query() {
+      if (this.query !== "") {
+        this.debouce(this.query);
       }
+    },
+  },
+
+  methods: {
+    fetchWeather(val) {
+      fetch(
+        `${this.url_base}weather?q=${val}&units=metric&APPID=${this.api_key}`
+      )
+        .then((res) => {
+          return res.json();
+        })
+        .then(this.setResults);
     },
 
     standardCity() {
@@ -68,6 +77,13 @@ export default {
           return res.json();
         })
         .then(this.setResults);
+    },
+
+    debouce(val) {
+      clearTimeout(this.searchTimer);
+      this.searchTimer = setTimeout(() => {
+        this.fetchWeather(val);
+      }, 500);
     },
 
     setResults(results) {
@@ -112,7 +128,7 @@ export default {
 };
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss">
 @import url("https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,600;1,700;1,800;1,900&display=swap");
 
 *,
@@ -124,10 +140,12 @@ export default {
 }
 
 #app {
-  font-family: "Montserrat", sans-serif;
-  background-image: url("./assets/cold-bg.jpg");
-  background-size: cover;
   background-position: bottom;
+  background-size: cover;
+  background-image: url("./assets/cold-bg.jpg");
+  font-family: "Montserrat", sans-serif;
+  max-width: 500px;
+  margin: 0 auto;
   transition: 0.4s;
 }
 
@@ -136,13 +154,13 @@ export default {
 }
 
 main {
-  min-height: 100vh;
   padding: 25px;
   background-image: linear-gradient(
     to bottom,
     rgba(0, 0, 0, 0.25),
     rgba(0, 0, 0, 0.75)
   );
+  min-height: 100vh;
 }
 
 .search-box {
